@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Опрос</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px;
+      background: var(--tg-theme-bg-color, #fff);
+      color: var(--tg-theme-text-color, #000);
+    }
+    .step-container { display: none; }
+    .step-container.active { display: block; }
+    h2 { margin-bottom: 16px; }
+    p { margin-bottom: 20px; color: var(--tg-theme-hint-color, #888); }
+    button {
+      display: block;
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: var(--tg-theme-button-color, #1e90ff);
+      color: var(--tg-theme-button-text-color, white);
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <!-- Шаг 1 -->
+    <div class="step-container active" data-step="1">
+      <h2>Шаг 1 из 3</h2>
+      <p>Какой вариант вам ближе?</p>
+      <button onclick="selectAnswer('step1', 'opt_1')">Вариант 1</button>
+      <button onclick="selectAnswer('step1', 'opt_2')">Вариант 2</button>
+      <button onclick="selectAnswer('step1', 'opt_3')">Вариант 3</button>
+    </div>
+
+    <!-- Шаг 2 -->
+    <div class="step-container" data-step="2">
+      <h2>Шаг 2 из 3</h2>
+      <p>Что важнее для вас?</p>
+      <button onclick="selectAnswer('step2', 'speed')">Скорость</button>
+      <button onclick="selectAnswer('step2', 'reliability')">Надёжность</button>
+      <button onclick="selectAnswer('step2', 'price')">Цена</button>
+    </div>
+
+    <!-- Шаг 3 -->
+    <div class="step-container" data-step="3">
+      <h2>Шаг 3 из 3</h2>
+      <p>Готовы ли вы подождать?</p>
+      <button onclick="selectAnswer('step3', 'yes')">Да</button>
+      <button onclick="selectAnswer('step3', 'no')">Нет</button>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+
+    let answers = {};
+
+    function selectAnswer(stepKey, value) {
+      answers[stepKey] = value;
+
+      const currentStepEl = document.querySelector('.step-container.active');
+      const currentStep = parseInt(currentStepEl.dataset.step);
+      const nextStep = currentStep + 1;
+      const nextEl = document.querySelector(`.step-container[data-step="${nextStep}"]`);
+
+      if (nextEl) {
+        currentStepEl.classList.remove('active');
+        nextEl.classList.add('active');
+      } else {
+        const payload = JSON.stringify({
+          user: tg.initDataUnsafe?.user || { id: 'unknown' },
+          answers: answers
+        });
+        tg.sendData(payload);
+      }
+    }
+  </script>
+</body>
+</html>
