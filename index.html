@@ -22,7 +22,7 @@
 
     .container {
       width: 100%;
-      max-width: 320px; /* Ключевое изменение: жёсткий лимит ширины */
+      max-width: 320px;
       padding: 12px;
       box-sizing: border-box;
       text-align: center;
@@ -72,6 +72,10 @@
       background-color: #b71c1c;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     @media (max-width: 300px) {
       h1 { font-size: 14px; }
       p { font-size: 12px; }
@@ -80,7 +84,7 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="page-1">
     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d32f2f'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E" alt="Письмо" class="header-icon" />
     
     <h1>Приглашение на свидание</h1>
@@ -92,16 +96,49 @@
     </div>
   </div>
 
+  <div class="container hidden" id="page-2">
+    <h1 id="result-title">Ура! 🎉</h1>
+    <p id="result-text">Ты сделала мой день!</p>
+    <p style="font-size: 12px; color: #888; margin-top: 16px;">Твой выбор отправлен боту. Окно закроется.</p>
+    <button onclick="closeApp()" style="background-color: #1976D2;">Закрыть</button>
+  </div>
+
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
 
-    function sendChoice(choice) {
-      tg.sendData(JSON.stringify({ type: 'invitation_response', choice: choice }));
+    function closeApp() {
+      tg.close();
     }
 
-    document.getElementById('btn-agree').addEventListener('click', () => sendChoice('agree'));
-    document.getElementById('btn-strong-agree').addEventListener('click', () => sendChoice('strong_agree'));
+    function handleChoice(choiceType) {
+      const page1 = document.getElementById('page-1');
+      const page2 = document.getElementById('page-2');
+      const resultTitle = document.getElementById('result-title');
+      const resultText = document.getElementById('result-text');
+
+      // SPA-переход: мгновенно показываем следующий экран
+      page1.classList.add('hidden');
+      page2.classList.remove('hidden');
+
+      if (choiceType === 'agree') {
+        resultTitle.innerText = 'Ура! 🎉';
+        resultText.innerText = 'Спасибо, что согласилась! Уже планирую вечер.';
+      } else {
+        resultTitle.innerText = 'Ты сделала мой день! 😍';
+        resultText.innerText = 'Всё будет идеально. Ты — самое дорогое, что у меня есть.';
+      }
+
+      // Отправляем данные боту
+      const payload = JSON.stringify({
+        type: 'invitation_response',
+        choice: choiceType
+      });
+      tg.sendData(payload);
+    }
+
+    document.getElementById('btn-agree').addEventListener('click', () => handleChoice('agree'));
+    document.getElementById('btn-strong-agree').addEventListener('click', () => handleChoice('strong_agree'));
   </script>
 </body>
 </html>
