@@ -84,61 +84,91 @@
   </style>
 </head>
 <body>
+
+  <!-- Страница 1: Приглашение -->
   <div class="container" id="page-1">
     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d32f2f'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E" alt="Письмо" class="header-icon" />
-    
     <h1>Приглашение на свидание</h1>
     <p>Ты — самое дорогое, что у меня есть. Хочу провести с тобой незабываемый вечер.</p>
-
     <div class="buttons-group">
       <button id="btn-agree">Я согласна</button>
       <button id="btn-strong-agree">Я точно согласна</button>
     </div>
   </div>
 
+  <!-- Страница 2: Выбор места -->
   <div class="container hidden" id="page-2">
-    <h1 id="result-title">Ура! 🎉</h1>
-    <p id="result-text">Ты сделала мой день!</p>
-    <p style="font-size: 12px; color: #888; margin-top: 16px;">Твой выбор отправлен боту. Окно закроется.</p>
-    <button onclick="closeApp()" style="background-color: #1976D2;">Закрыть</button>
+    <h1>Куда пойдём?</h1>
+    <p>Выбери, что тебе больше нравится 😊</p>
+    <div class="buttons-group">
+      <button class="btn-place" data-place="restaurant">Ресторан 🍽️</button>
+      <button class="btn-place" data-place="cinema">Кино 🎬</button>
+      <button class="btn-place" data-place="walk">Прогулка 🌅</button>
+    </div>
+  </div>
+
+  <!-- Страница 3: Финал -->
+  <div class="container hidden" id="page-3">
+    <h1 id="final-title">Ура! 🎉</h1>
+    <p id="final-text">Всё запланировано! Жду тебя.</p>
+    <button onclick="tg.close()" style="background-color: #1976D2;">Закрыть</button>
   </div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
 
-    function closeApp() {
-      tg.close();
-    }
+    // Получаем ID пользователя Telegram
+    const userId = tg.initDataUnsafe?.user?.id || null;
 
-    function handleChoice(choiceType) {
-      const page1 = document.getElementById('page-1');
-      const page2 = document.getElementById('page-2');
-      const resultTitle = document.getElementById('result-title');
-      const resultText = document.getElementById('result-text');
-
-      // SPA-переход: мгновенно показываем следующий экран
-      page1.classList.add('hidden');
-      page2.classList.remove('hidden');
-
-      if (choiceType === 'agree') {
-        resultTitle.innerText = 'Ура! 🎉';
-        resultText.innerText = 'Спасибо, что согласилась! Уже планирую вечер.';
-      } else {
-        resultTitle.innerText = 'Ты сделала мой день! 😍';
-        resultText.innerText = 'Всё будет идеально. Ты — самое дорогое, что у меня есть.';
+    // Универсальная функция отправки на сервер
+    async function sendToServer(payload) {
+      try {
+        const response = await fetch('/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, user_id: userId })
+        });
+        return await response.json();
+      } catch (e) {
+        console.error('Ошибка отправки:', e);
       }
-
-      // Отправляем данные боту
-      const payload = JSON.stringify({
-        type: 'invitation_response',
-        choice: choiceType
-      });
-      tg.sendData(payload);
     }
 
-    document.getElementById('btn-agree').addEventListener('click', () => handleChoice('agree'));
-    document.getElementById('btn-strong-agree').addEventListener('click', () => handleChoice('strong_agree'));
+    // Переход между страницами
+    function showPage(pageId) {
+      document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+      document.getElementById(pageId).classList.remove('hidden');
+    }
+
+    // Кнопки страницы 1
+    document.getElementById('btn-agree').addEventListener('click', async () => {
+      await sendToServer({ step: 'invitation', choice: 'agree' });
+      showPage('page-2');
+    });
+
+    document.getElementById('btn-strong-agree').addEventListener('click', async () => {
+      await sendToServer({ step: 'invitation', choice: 'strong_agree' });
+      showPage('page-2');
+    });
+
+    // Кнопки страницы 2
+    document.querySelectorAll('.btn-place').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const place = btn.dataset.place;
+        await sendToServer({ step: 'place', choice: place });
+
+        const placeNames = {
+          restaurant: 'Ресторан 🍽️',
+          cinema: 'Кино 🎬',
+          walk: 'Прогулка 🌅'
+        };
+
+        document.getElementById('final-text').innerText =
+          `Отлично! ${placeNames[place]} — прекрасный выбор. Жду тебя!`;
+        showPage('page-3');
+      });
+    });
   </script>
 </body>
 </html>
